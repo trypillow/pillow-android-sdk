@@ -1,0 +1,31 @@
+name: Validate Pillow Android SDK
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Validate SDK
+        run: ./gradlew :sdk:lint :sdk:testDebugUnitTest
+
+      - name: Publish SDK to local Maven
+        run: ./gradlew :sdk:publishReleasePublicationToMavenLocal
+
+      - name: Validate sample app against published artifact
+        run: ./gradlew :sample:assembleDebug -PuseMavenLocalSdk=true
