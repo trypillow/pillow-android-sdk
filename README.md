@@ -25,7 +25,7 @@ repositories {
 }
 
 dependencies {
-  implementation("so.pillow:pillow-android-sdk:0.1.1")
+  implementation("so.pillow:pillow-android-sdk:0.1.3")
 }
 ```
 
