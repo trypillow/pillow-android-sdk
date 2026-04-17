@@ -71,6 +71,19 @@ PillowSDK.presentStudy(
 )
 ```
 
+Once your activity is ready to let Pillow present UI, call:
+
+```kotlin
+override fun onResume() {
+    super.onResume()
+    PillowSDK.onReadyToPresentStudy(activity = this)
+}
+```
+
+After this is called for the current ready activity, the SDK can automatically present pending backend-driven `launch_study` instructions while the app stays foregrounded in that ready state. Native mobile presentation stays the same; any `web_display` payload is forwarded to the hosted web experience only.
+
+If you need to force an immediate manual check, `presentLaunchStudyIfAvailable(activity = this)` is still available.
+
 ### 4. Handle microphone permissions
 
 If your study uses voice input, forward the permission result to the SDK in the `Activity` that calls `presentStudy`:
@@ -111,7 +124,7 @@ class MainActivity : AppCompatActivity() {
             activity = this,
             study = PillowStudy(id = "your-study-id-here"),
             options = PillowStudyPresentationOptions(skipIfAlreadyExposed = true),
-            listener = object : PillowStudyListener {
+            delegate = object : PillowStudyDelegate {
                 override fun studyDidPresent(study: PillowStudy) {
                     // study modal appeared on screen
                 }
@@ -126,6 +139,11 @@ class MainActivity : AppCompatActivity() {
                 }
             },
         )
+    }
+
+    override fun onResume() {
+        super.onResume()
+        PillowSDK.onReadyToPresentStudy(activity = this)
     }
 
     override fun onRequestPermissionsResult(
@@ -187,7 +205,7 @@ Removes all properties from the current user.
 PillowSDK.clearAllProperties()
 ```
 
-### `presentStudy(activity, study, options, listener)`
+### `presentStudy(activity, study, options, delegate)`
 
 Presents a Pillow study. Resumes an in-progress session if one exists for the same study ID unless you override that behavior in `options`.
 
@@ -206,7 +224,32 @@ Use `forceFreshSession = true` to always start a new session.
 
 Use `skipIfAlreadyExposed = true` to only show the study once per user.
 
-### `PillowStudyListener`
+### `onReadyToPresentStudy(activity)`
+
+Tells the SDK the current activity is ready for automatic study presentation. Call it whenever the app returns to a safe UI state where Pillow is allowed to present over the current activity.
+
+```kotlin
+override fun onResume() {
+    super.onResume()
+    PillowSDK.onReadyToPresentStudy(activity = this)
+}
+```
+
+### `presentLaunchStudyIfAvailable(activity, delegate)`
+
+Manually checks whether the backend returned a `launch_study` instruction for the current SDK user and presents it if available.
+
+```kotlin
+PillowSDK.presentLaunchStudyIfAvailable(
+  activity = this,
+)
+```
+
+The method checks asynchronously for a pending launch study instruction. If one is available, the study is presented and the delegate receives `studyDidPresent`. If the study was already shown, the delegate receives `studyDidSkip`. If no instruction is available, no delegate method is called.
+
+Any `launch_study.web_display` payload is passed through to the hosted web experience only. It does not change the native Android modal presentation.
+
+### `PillowStudyDelegate`
 
 An interface with lifecycle methods. Override only the ones you need — all methods have no-op defaults.
 
@@ -217,7 +260,7 @@ An interface with lifecycle methods. Override only the ones you need — all met
 | `studyDidFinish(study)` | The user finished or dismissed the study |
 | `studyDidFailToLoad(study, error)` | The study could not be loaded or presented |
 
-All listener methods are invoked on the main thread.
+All delegate methods are invoked on the main thread.
 
 ### `onRequestPermissionsResult(...)`
 

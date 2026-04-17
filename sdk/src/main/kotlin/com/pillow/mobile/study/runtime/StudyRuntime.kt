@@ -12,6 +12,7 @@ import com.pillow.mobile.audience.runtime.readAudienceRuntimeEndpoints
 import com.pillow.mobile.study.api.PrepareCampaignRequest
 import com.pillow.mobile.study.api.StudyApiClient
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.JsonObject
 
 public data class PillowStudy(
   val id: String,
@@ -40,6 +41,7 @@ internal data class PreparedCampaignPresentation(
   val alias: String,
   val studyUrl: String,
   val campaignHandoffToken: String,
+  val webDisplay: JsonObject? = null,
 )
 
 internal sealed interface PrepareStudyPresentationResult
@@ -70,6 +72,7 @@ internal class StudyRuntime(
   suspend fun preparePresentation(
     study: PillowStudy,
     skipIfAlreadyExposed: Boolean,
+    launchStudyInstruction: LaunchStudyInstruction? = null,
   ): PrepareStudyPresentationResult {
     val trimmedAlias = study.id.trim()
     require(trimmedAlias.isNotEmpty()) { "alias must not be blank" }
@@ -87,6 +90,7 @@ internal class StudyRuntime(
         sessionToken = sessionToken,
         alias = trimmedAlias,
         skipIfAlreadyExposed = skipIfAlreadyExposed,
+        distributionToken = launchStudyInstruction?.distributionToken,
       ),
     )
 
@@ -109,8 +113,16 @@ internal class StudyRuntime(
           alias = trimmedAlias,
           studyUrl = studyUrl,
           campaignHandoffToken = campaignHandoffToken,
+          webDisplay = launchStudyInstruction?.webDisplay,
         ),
     )
+  }
+
+  suspend fun readLaunchStudyInstruction(): LaunchStudyInstruction? =
+    readLaunchStudyInstruction(secureStore)
+
+  suspend fun clearLaunchStudyInstruction() {
+    writeLaunchStudyInstruction(secureStore, null)
   }
 
   suspend fun readStoredSessionToken(alias: String): String? = secureStore.readValue(sessionKey(alias))
