@@ -4,6 +4,10 @@ All notable changes to `pillow-android-sdk` will be documented in this file.
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-04-28
+
+- Documentation: update README install snippet to reference the current SDK version. No runtime changes.
+
 ## [0.1.5] - 2026-04-28
 
 - Treat the local SQLite installation row as the source of truth for fresh-install detection. Cloud-backup restores now preserve the audience installation_id instead of rotating it.
